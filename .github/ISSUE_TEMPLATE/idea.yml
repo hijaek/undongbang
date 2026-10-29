@@ -1,0 +1,18 @@
+name: 아이디어 제안
+description: 운동방이 더 편해질 방법을 알려주세요.
+title: "[제안] "
+labels: [enhancement]
+body:
+  - type: textarea
+    id: need
+    attributes:
+      label: 어떤 점이 불편한가요?
+      placeholder: 언제, 누구에게 필요한지 알려주세요.
+    validations:
+      required: true
+  - type: textarea
+    id: idea
+    attributes:
+      label: 어떻게 바뀌면 좋을까요?
+    validations:
+      required: true

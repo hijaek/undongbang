@@ -1,0 +1,34 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1793231282367,
+      "tag": "0000_lowly_falcon",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1793231913378,
+      "tag": "0001_needy_nova",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1793241341971,
+      "tag": "0002_third_daredevil",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1793241493535,
+      "tag": "0003_glorious_mongu",
+      "breakpoints": true
+    }
+  ]
+}

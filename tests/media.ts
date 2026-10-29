@@ -1,0 +1,13 @@
+import assert from 'node:assert/strict';
+import {encode} from '../lib/media';
+let mode='webp',calls:string[]=[],canvas:any;
+Object.assign(globalThis,{document:{createElement(){canvas={width:0,height:0,getContext:()=>({fillRect(){},drawImage(){}}),toBlob(callback:any,type:string){calls.push(type);const actual=mode==='fallback'&&type==='image/webp'?'image/png':type;const size=mode==='large'?this.width*this.height:1000;callback(mode==='null'?null:new Blob([new Uint8Array(size)],{type:actual}));}};return canvas;}}});
+const source={} as CanvasImageSource;
+assert.equal((await encode(source,4000,3000,1440,300000)).type,'image/webp');
+mode='fallback';calls=[];const jpeg=await encode(source,4000,3000,1440,300000);
+assert.equal(jpeg.type,'image/jpeg');assert.deepEqual(calls,['image/webp','image/jpeg']);
+mode='large';const small=await encode(source,4000,3000,1440,300000);assert.ok(small.size<=300000);
+assert.ok((await encode(source,4000,3000,320,45000)).size<=45000);
+mode='null';await assert.rejects(encode(source,4000,3000,1440,300000));assert.equal(canvas.width,1);
+await assert.rejects(encode(source,0,0,1440,300000));
+console.log('PASS media: WebP, unsupported-format JPEG fallback, photo/thumbnail byte limits, failed encoder cleanup, invalid dimensions');

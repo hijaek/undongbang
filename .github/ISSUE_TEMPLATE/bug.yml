@@ -1,0 +1,39 @@
+name: 버그 제보
+description: 잘 안 되는 부분을 알려주세요. 코드를 몰라도 괜찮아요.
+title: "[버그] "
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: "사진·이메일·초대 코드·정산 내역 등 개인정보는 가려주세요. 이 글은 공개됩니다."
+  - type: textarea
+    id: problem
+    attributes:
+      label: 무엇이 안 되나요?
+      placeholder: "예: 휴식 신청 화면에서 보내기 버튼이 보이지 않아요."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: 어떤 순서로 했나요?
+      placeholder: "예: 나의 기록 → 휴식 신청 → 메모 입력 → 아래로 스크롤"
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: 원래 어떻게 되어야 하나요?
+      placeholder: "예: 키보드가 열려도 보내기 버튼을 누를 수 있어야 해요."
+  - type: input
+    id: device
+    attributes:
+      label: 휴대폰과 브라우저
+      placeholder: "예: 아이폰 17, iOS 버전, Chrome / 또는 갤럭시, Samsung Internet"
+    validations:
+      required: true
+  - type: textarea
+    id: screenshot
+    attributes:
+      label: 사진이나 추가 설명 (선택)
+      description: 개인정보를 가린 스크린샷을 붙여넣거나 끌어다 놓을 수 있어요.
