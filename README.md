@@ -5,7 +5,7 @@
   <p><a href="https://undong.club">앱 열기</a> · <a href="https://github.com/hijaek/undongbang/issues/new/choose">버그 제보 / 아이디어</a> · <a href="CONTRIBUTING.md">함께 고치기</a></p>
 </div>
 
-설치 없이 휴대폰 브라우저에서 쓰는 운동 모임 앱입니다. Google로 로그인하고 초대 코드로 우리 방에 들어오세요.
+설치 없이 휴대폰 브라우저에서 쓰는 운동 모임 앱입니다. Google로 로그인하고 기존 방의 초대 코드로 참여하세요. 새 방 만들기는 지원하지 않아요.
 
 - **기록하고 응원하기** — 운동 사진·영상, 좋아요, 댓글, 주별 기록.
 - **꾸준함 챙기기** — 주간 목표, 휴식 신청, 내 운동 통계.

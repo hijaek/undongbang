@@ -43,13 +43,8 @@ export async function handleApi(request:Request,env:Env,ctx:ExecutionContext):Pr
   if(path==='/api/me'&&method==='PATCH'){
     const b=await body(request),name=str(b.name,30,1),active=await env.DB.prepare("SELECT id,room_id FROM members WHERE user_id=? AND status='active'").bind(user.id).all<{id:string;room_id:string}>();await env.DB.batch([env.DB.prepare('UPDATE users SET name=? WHERE id=?').bind(name,user.id),env.DB.prepare("UPDATE members SET name=? WHERE user_id=? AND status='active'").bind(name,user.id),...active.results.flatMap(m=>changed(env,m.room_id,user.id,'name',m.id))]);for(const m of active.results)scheduleSync(env,ctx,m.room_id);return json({ok:true});
   }
-  if(path==='/api/rooms'&&method==='POST'){
-    const b=await body(request),name=str(b.name,30,1),goal=Number(b.goal),fine=Number(b.fine),payout=str(b.payout,10);
-    if(!Number.isInteger(goal)||goal<1||goal>7||!Number.isInteger(fine)||fine<1||fine>20||!['week','month','year'].includes(payout))fail(400,'운동방 규칙을 확인해주세요.');
-    if(await env.DB.prepare("SELECT id FROM members WHERE user_id=? AND status='active'").bind(user.id).first())fail(409,'이미 참여 중인 운동방이 있어요.');
-    const id=uid(),memberId=uid(),code=Array.from(crypto.getRandomValues(new Uint8Array(6)),n=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[n%32]).join(''),at=now();
-    await env.DB.batch([env.DB.prepare('INSERT INTO rooms(id,name,host_id,goal,fine_cents,timezone,payout_period,invite_code,created_at) VALUES(?,?,?,?,?,?,?,?,?)').bind(id,name,user.id,goal,fine*100,'America/New_York',payout,code,at),env.DB.prepare('INSERT INTO members(id,room_id,user_id,name,role,status,joined_at) VALUES(?,?,?,?,?,?,?)').bind(memberId,id,user.id,user.name,'host','active',at),...changed(env,id,user.id,'join',memberId)]);return json({id,code},201);
-  }
+  // Existing rooms are invite-only. Keep this denial for clients with an older cached UI.
+  if(path==='/api/rooms'&&method==='POST')fail(403,'새 운동방은 만들 수 없어요. 기존 방의 초대 코드로 참여해주세요.');
   if((path==='/api/join/preview'||path==='/api/join')&&method==='POST'){
     await limit(env,'invite:'+user.id,12,600000);const b=await body(request),code=str(b.code,6,6).toUpperCase();
     const room=await env.DB.prepare('SELECT id,name,goal,fine_cents,timezone,payout_period,created_at FROM rooms WHERE invite_code=?').bind(code).first<RoomRow>();if(!room)fail(404,'초대 코드를 다시 확인해주세요.');
