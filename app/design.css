@@ -169,3 +169,5 @@ h1,h2,h3{letter-spacing:normal}strong{font-weight:600}
  .post-name{min-height:44px;align-items:center}
 }
 .comments-sheet>.error-box{flex:none;max-height:72px;overflow:auto}
+
+.story-bottom .story-viewers{align-self:flex-start;width:auto;min-height:44px;gap:8px;padding:0 10px;border-radius:12px;color:white;font-size:13px;font-weight:600;background:#ffffff14;touch-action:manipulation}.story-viewers:active{background:#ffffff2b}
