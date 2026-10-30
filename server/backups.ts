@@ -1,12 +1,12 @@
 import {Env,encrypt,decrypt,hash,now,uid,fail} from './core';
 
 // Only durable business data. Sessions and OAuth handshakes are intentionally not restored.
-export const BACKUP_TABLES=['users','rooms','members','posts','rests','fines','settlements','distributions','cheers','comments','audit'] as const;
+export const BACKUP_TABLES=['users','rooms','members','posts','rests','fines','settlements','distributions','cheers','comments','audit','story_views'] as const;
 type Part={table:string;key:string;sha256:string;rows:number};
 export type BackupManifest={format:1;id:string;created_at:string;parts:Part[];media:{key:string;backupKey:string;size:number;etag:string}[];rows:number};
 const prefix='__backups/';
 async function inventory(env:Env,prefix:string){const objects=new Map<string,R2Object>();let cursor:string|undefined;do{const page=await env.BUCKET.list({prefix,cursor,limit:1000,include:['customMetadata']} as R2ListOptions);for(const o of page.objects)objects.set(o.key,o);cursor=page.truncated?page.cursor:undefined;}while(cursor);return objects;}
-async function stamp(env:Env){return JSON.stringify(await env.DB.prepare('SELECT COUNT(*) AS rooms,COALESCE(SUM(revision),0) AS revision,(SELECT COUNT(*) FROM users) AS users FROM rooms').first());}
+async function stamp(env:Env){return JSON.stringify(await env.DB.prepare('SELECT COUNT(*) AS rooms,COALESCE(SUM(revision),0) AS revision,(SELECT COUNT(*) FROM users) AS users,(SELECT COUNT(*) FROM story_views) AS story_views FROM rooms').first());}
 async function readManifest(env:Env,id:string){
  if(!env.APP_SECRET)throw Error('Backup encryption is not configured');
  const row=await env.DB.prepare("SELECT manifest_key FROM backups WHERE id=? AND status='complete'").bind(id).first<{manifest_key:string}>();

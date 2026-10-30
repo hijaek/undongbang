@@ -35,6 +35,24 @@ try{
  const member=await db.prepare('SELECT * FROM members WHERE user_id=?').bind('member').first<any>();
  await db.prepare('UPDATE rooms SET created_at=? WHERE id=?').bind(weekEnds(addDays(previous,-7)),rid).run();await db.prepare('UPDATE members SET joined_at=? WHERE room_id=?').bind(weekEnds(addDays(previous,-7)),rid).run();
  for(let i=0;i<27;i++){const id='post-'+String(i).padStart(8,'0');await db.prepare('INSERT INTO posts(id,room_id,member_id,kind,caption,media_key,thumb_key,bytes,created_at,week,status) VALUES(?,?,?,?,?,?,?,?,?,?,?)').bind(id,rid,member.id,'image','테스트 인증',id+'/media',id+'/thumb',100,at,week,'valid').run();}
+ await test('story views count distinct other members and never expose viewer identities',async()=>{
+  const path='/api/posts/post-00000001/views';
+  assert.equal((await request(path,'GET',undefined,'missing')).status,401);
+  assert.equal((await request(path,'PUT',{},'outsider')).status,403);
+  assert.equal((await request(path,'PUT',{},'host',false)).status,403);
+  assert.deepEqual((await request(path,'GET',undefined,'member')).data,{count:0});
+  assert.equal((await request(path,'PUT',{},'member')).status,200);
+  assert.deepEqual((await request(path,'GET',undefined,'member')).data,{count:0});
+  const results=await Promise.all([request(path,'PUT',{},'host'),request(path,'PUT',{},'host')]);assert.ok(results.every(r=>r.status===200));
+  assert.deepEqual((await request(path,'GET',undefined,'member')).data,{count:1});
+  assert.equal((await request(path,'GET',undefined,'host')).status,403);
+  assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM story_views').first<any>()).n,1);
+ });
+ await test('expired stories cannot accumulate new views',async()=>{
+  await db.prepare('UPDATE posts SET created_at=? WHERE id=?').bind('2020-01-01T00:00:00Z','post-00000002').run();
+  assert.equal((await request('/api/posts/post-00000002/views','PUT',{},'host')).status,404);
+  await db.prepare('UPDATE posts SET created_at=? WHERE id=?').bind(at,'post-00000002').run();
+ });
  await test('cursor pagination has no duplicates when timestamps tie',async()=>{let cursor:string|null=null;const ids:string[]=[];do{const r=await request(`/api/feed?room=${rid}${cursor?'&cursor='+encodeURIComponent(cursor):''}`);assert.equal(r.status,200);assert.ok(r.data.posts.length<=12);ids.push(...r.data.posts.map((p:any)=>p.id));cursor=r.data.nextCursor;}while(cursor);assert.equal(ids.length,27);assert.equal(new Set(ids).size,27);});
  await test('cheer PUT is idempotent',async()=>{const path='/api/posts/post-00000000/cheer';assert.equal((await request(path,'PUT',{on:true})).status,200);await request(path,'PUT',{on:true});const c=await db.prepare('SELECT count(*) AS n FROM cheers').first<any>();assert.equal(c.n,1);await request(path,'PUT',{on:false});assert.equal((await db.prepare('SELECT count(*) AS n FROM cheers').first<any>()).n,0);});
  await test('comment retries do not duplicate',async()=>{const data={id:'comment-00000001',text:'좋아요'};await request('/api/posts/post-00000000/comments','POST',data);await request('/api/posts/post-00000000/comments','POST',data);assert.equal((await request('/api/posts/post-00000000/comments')).data.comments.length,1);});
@@ -59,12 +77,16 @@ try{
  await test('author deletion removes media, reactions and counts and is safe to retry',async()=>{
   const id='upload-test-0001',p='/api/posts/'+id;
   await request(p+'/cheer','PUT',{on:true},'member');
+  await request(p+'/views','PUT',{},'member');
   await request(p+'/comments','POST',{id:'delete-comment-1',text:'응원'},'member');
   const before=(await request('/api/bootstrap')).data.members.find((m:any)=>m.user_id==='host').count;
   assert.equal((await request(p,'DELETE')).status,200);
   assert.equal((await request(p,'DELETE')).status,200);
   assert.equal((await request(p)).status,404);
   assert.equal((await request(p+'/comments')).status,404);
+  assert.equal((await request(p+'/views')).status,404);
+  assert.equal((await request(p+'/views','PUT',{},'member')).status,404);
+  assert.equal((await db.prepare('SELECT COUNT(*) AS n FROM story_views WHERE post_id=?').bind(id).first<any>()).n,0);
   assert.equal((await request(p+'/cheer','PUT',{on:true})).status,404);
   assert.equal((await request(p+'/comments','POST',{id:'after-delete-1',text:'응원'})).status,404);
   assert.equal((await request(`/api/media/${id}?room=${rid}`)).status,404);

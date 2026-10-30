@@ -82,6 +82,7 @@ export async function handleApi(request:Request,env:Env,ctx:ExecutionContext):Pr
         env.DB.prepare("UPDATE posts SET status='deleted',caption='' WHERE id=? AND member_id=? AND status!='deleted'").bind(post.id,member.id),
         env.DB.prepare('DELETE FROM comments WHERE post_id=?').bind(post.id),
         env.DB.prepare('DELETE FROM cheers WHERE post_id=?').bind(post.id),
+        env.DB.prepare('DELETE FROM story_views WHERE post_id=?').bind(post.id),
         ...changed(env,post.room_id,user.id,'post-delete',post.id)
       ]);
     }
@@ -169,6 +170,18 @@ export async function handleApi(request:Request,env:Env,ctx:ExecutionContext):Pr
   if(cheerMatch&&method==='PUT'){
     const {post}=await postAccess(env,user,cheerMatch[1]),b=await body(request);if(typeof b.on!=='boolean')fail(400,'응원 상태를 확인해주세요.');
     await env.DB.batch([b.on?env.DB.prepare("INSERT OR IGNORE INTO cheers(post_id,user_id) SELECT ?,? WHERE EXISTS(SELECT 1 FROM posts WHERE id=? AND status!='deleted')").bind(post.id,user.id,post.id):env.DB.prepare('DELETE FROM cheers WHERE post_id=? AND user_id=?').bind(post.id,user.id),env.DB.prepare('UPDATE rooms SET revision=revision+1 WHERE id=?').bind(post.room_id)]);return json({ok:true});
+  }
+  const views=path.match(/^\/api\/posts\/([^/]+)\/views$/);
+  if(views&&(method==='GET'||method==='PUT')){
+    const {post,member}=await postAccess(env,user,views[1]);
+    if(method==='GET'){
+      if(post.member_id!==member.id)fail(403,'내 스토리의 조회수만 볼 수 있어요.');
+      const count=await env.DB.prepare('SELECT COUNT(*) AS count FROM story_views WHERE post_id=?').bind(post.id).first<{count:number}>();
+      return json({count:count?.count||0});
+    }
+    if(post.status!=='valid'||Date.parse(String(post.created_at))<Date.now()-86400000)fail(404,'스토리가 만료되었어요.');
+    if(post.member_id!==member.id)await env.DB.prepare("INSERT OR IGNORE INTO story_views(post_id,user_id,created_at) SELECT ?,?,? WHERE EXISTS(SELECT 1 FROM posts WHERE id=? AND status='valid')").bind(post.id,user.id,now(),post.id).run();
+    return json({ok:true});
   }
   const cm=path.match(/^\/api\/posts\/([^/]+)\/comments$/);
   if(cm){const {post}=await postAccess(env,user,cm[1]);

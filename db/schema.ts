@@ -20,3 +20,5 @@ export const syncOutbox=sqliteTable('sync_outbox',{room_id:text().notNull(),enti
 export const jobs=sqliteTable('jobs',{id:text().primaryKey(),lease:text(),lease_until:integer().notNull().default(0),last_started:text(),last_success:text(),last_error:text()});
 export const incidents=sqliteTable('incidents',{id:text().primaryKey(),room_id:text(),kind:text().notNull(),message:text().notNull(),first_at:text().notNull(),last_at:text().notNull(),occurrences:integer().notNull().default(1),resolved_at:text(),notified_at:text()},t=>[index('incident_open').on(t.resolved_at,t.last_at)]);
 export const backups=sqliteTable('backups',{id:text().primaryKey(),created_at:text().notNull(),status:text().notNull(),manifest_key:text(),rows:integer().notNull().default(0),objects:integer().notNull().default(0),verified_at:text(),error:text()});
+
+export const storyViews=sqliteTable('story_views',{post_id:text().notNull().references(()=>posts.id),user_id:text().notNull().references(()=>users.id),created_at:text().notNull()},t=>[primaryKey({columns:[t.post_id,t.user_id]})]);
